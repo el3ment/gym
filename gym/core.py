@@ -93,8 +93,11 @@ class Env(object):
 
         self.monitor._before_step(action)
         observation, reward, done, info = self._step(action)
-        if not self.observation_space.contains(observation):
-            logger.warn("Observation '{}' is not contained within observation space '{}'.".format(observation, self.observation_space))
+
+        # RP: Contains is slow, and not particularly useful if you are careful
+        # RP: This should get conditioned with a parameter that can be turned on and off
+        # if not self.observation_space.contains(observation):
+        #     logger.warn("Observation '{}' is not contained within observation space '{}'.".format(observation, self.observation_space))
 
         done = self.monitor._after_step(observation, reward, done, info)
         return observation, reward, done, info
