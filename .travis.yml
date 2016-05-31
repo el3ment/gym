@@ -13,6 +13,7 @@ addons:
       - cmake
       - cmake-data
       - python-dev
+      - python-scipy
       - python3.4-dev
       - swig
       - libav-tools
