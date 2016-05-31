@@ -6,6 +6,7 @@ from Box2D.b2 import (edgeShape, circleShape, fixtureDef, polygonShape, revolute
 
 import gym
 from gym import spaces
+from gym.utils import colorize, seeding
 
 # This is simple 4-joints walker robot environment.
 #
@@ -15,8 +16,11 @@ from gym import spaces
 #
 # - Hardcore with ladders, stumps, pitfalls.
 #
-# Reward is given for moving forward, total 300 points up to the far end. If the robot falls,
-# it gets -100. Heuristic is provided for testing, it's also useful to get demonstrations to
+# Reward is given for moving forward, total 300+ points up to the far end. If the robot falls,
+# it gets -100. Applying motor torque costs a small amount of points, more optimal agent
+# will get better score.
+#
+# Heuristic is provided for testing, it's also useful to get demonstrations to
 # learn from. To run heuristic:
 #
 # python gym/envs/box2d/bipedal_walker.py
@@ -83,11 +87,8 @@ class BipedalWalker(gym.Env):
     hardcore = False
 
     def __init__(self):
+        self._seed()
         self.viewer = None
-
-        high = np.array([np.inf]*24)
-        self.action_space = spaces.Box( np.array([-1,-1,-1,-1]), np.array([+1,+1,+1,+1]) )
-        self.observation_space = spaces.Box(-high, high)
 
         self.world = Box2D.b2World()
         self.terrain = None
@@ -95,6 +96,14 @@ class BipedalWalker(gym.Env):
 
         self.prev_shaping = None
         self._reset()
+
+        high = np.array([np.inf]*24)
+        self.action_space = spaces.Box(np.array([-1,-1,-1,-1]), np.array([+1,+1,+1,+1]))
+        self.observation_space = spaces.Box(-high, high)
+
+    def _seed(self, seed=None):
+        self.np_random, seed = seeding.np_random(seed)
+        return [seed]
 
     def _destroy(self):
         if not self.terrain: return
@@ -125,11 +134,11 @@ class BipedalWalker(gym.Env):
 
             if state==GRASS and not oneshot:
                 velocity = 0.8*velocity + 0.01*np.sign(TERRAIN_HEIGHT - y)
-                if i > TERRAIN_STARTPAD: velocity += np.random.uniform(-1, 1)/SCALE   #1
+                if i > TERRAIN_STARTPAD: velocity += self.np_random.uniform(-1, 1)/SCALE   #1
                 y += velocity
 
             elif state==PIT and oneshot:
-                counter = np.random.randint(3, 5)
+                counter = self.np_random.randint(3, 5)
                 poly = [
                     (x,              y),
                     (x+TERRAIN_STEP, y),
@@ -159,7 +168,7 @@ class BipedalWalker(gym.Env):
                     y -= 4*TERRAIN_STEP
 
             elif state==STUMP and oneshot:
-                counter = np.random.randint(1, 3)
+                counter = self.np_random.randint(1, 3)
                 poly = [
                     (x,                      y),
                     (x+counter*TERRAIN_STEP, y),
@@ -175,9 +184,9 @@ class BipedalWalker(gym.Env):
                 self.terrain.append(t)
 
             elif state==STAIRS and oneshot:
-                stair_height = +1 if np.random.ranf() > 0.5 else -1
-                stair_width = np.random.randint(4, 5)
-                stair_steps = np.random.randint(3, 5)
+                stair_height = +1 if self.np_random.rand() > 0.5 else -1
+                stair_width = self.np_random.randint(4, 5)
+                stair_steps = self.np_random.randint(3, 5)
                 original_y = y
                 for s in range(stair_steps):
                     poly = [
@@ -204,9 +213,9 @@ class BipedalWalker(gym.Env):
             self.terrain_y.append(y)
             counter -= 1
             if counter==0:
-                counter = np.random.randint(TERRAIN_GRASS/2, TERRAIN_GRASS)
+                counter = self.np_random.randint(TERRAIN_GRASS/2, TERRAIN_GRASS)
                 if state==GRASS and hardcore:
-                    state = np.random.randint(1, _STATES_)
+                    state = self.np_random.randint(1, _STATES_)
                     oneshot = True
                 else:
                     state = GRASS
@@ -237,11 +246,11 @@ class BipedalWalker(gym.Env):
         # Sorry for the clouds, couldn't resist
         self.cloud_poly   = []
         for i in range(TERRAIN_LENGTH//20):
-            x = np.random.uniform(0, TERRAIN_LENGTH)*TERRAIN_STEP
+            x = self.np_random.uniform(0, TERRAIN_LENGTH)*TERRAIN_STEP
             y = VIEWPORT_H/SCALE*3/4
             poly = [
-                (x+15*TERRAIN_STEP*math.sin(3.14*2*a/5)+np.random.uniform(0,5*TERRAIN_STEP),
-                 y+ 5*TERRAIN_STEP*math.cos(3.14*2*a/5)+np.random.uniform(0,5*TERRAIN_STEP) )
+                (x+15*TERRAIN_STEP*math.sin(3.14*2*a/5)+self.np_random.uniform(0,5*TERRAIN_STEP),
+                 y+ 5*TERRAIN_STEP*math.cos(3.14*2*a/5)+self.np_random.uniform(0,5*TERRAIN_STEP) )
                 for a in range(5) ]
             x1 = min( [p[0] for p in poly] )
             x2 = max( [p[0] for p in poly] )
@@ -275,7 +284,7 @@ class BipedalWalker(gym.Env):
                 )
         self.hull.color1 = (0.5,0.4,0.9)
         self.hull.color2 = (0.3,0.3,0.5)
-        self.hull.ApplyForceToCenter((np.random.uniform(-INITIAL_RANDOM, INITIAL_RANDOM), 0), True)
+        self.hull.ApplyForceToCenter((self.np_random.uniform(-INITIAL_RANDOM, INITIAL_RANDOM), 0), True)
 
         self.legs = []
         self.joints = []
@@ -352,10 +361,10 @@ class BipedalWalker(gym.Env):
         #self.hull.ApplyForceToCenter((0, 20), True) -- Uncomment this to receive a bit of stability help
         control_speed = False  # Should be easier as well
         if control_speed:
-            self.joints[0].motorSpeed = float(SPEED_HIP  * np.clip(-1, 1, action[0]))
-            self.joints[1].motorSpeed = float(SPEED_KNEE * np.clip(-1, 1, action[1]))
-            self.joints[2].motorSpeed = float(SPEED_HIP  * np.clip(-1, 1, action[2]))
-            self.joints[3].motorSpeed = float(SPEED_KNEE * np.clip(-1, 1, action[3]))
+            self.joints[0].motorSpeed = float(SPEED_HIP  * np.clip(action[0], -1, 1))
+            self.joints[1].motorSpeed = float(SPEED_KNEE * np.clip(action[1], -1, 1))
+            self.joints[2].motorSpeed = float(SPEED_HIP  * np.clip(action[2], -1, 1))
+            self.joints[3].motorSpeed = float(SPEED_KNEE * np.clip(action[3], -1, 1))
         else:
             self.joints[0].motorSpeed     = float(SPEED_HIP     * np.sign(action[0]))
             self.joints[0].maxMotorTorque = float(MOTORS_TORQUE * np.clip(np.abs(action[0]), 0, 1))
@@ -400,13 +409,17 @@ class BipedalWalker(gym.Env):
 
         self.scroll = pos.x - VIEWPORT_W/SCALE/5
 
-        shaping  = 110*pos[0]/SCALE   # moving forward is a way to receive reward (normalized to get 300 on completion)
+        shaping  = 130*pos[0]/SCALE   # moving forward is a way to receive reward (normalized to get 300 on completion)
         shaping -= 5.0*abs(state[0])  # keep head straight, other than that and falling, any behavior is unpunished
 
         reward = 0
         if self.prev_shaping is not None:
             reward = shaping - self.prev_shaping
         self.prev_shaping = shaping
+
+        for a in action:
+            reward -= 0.00035 * MOTORS_TORQUE * np.clip(np.abs(a), 0, 1)
+            # normalized to about -50.0 using heuristic, more optimal agent should spend less
 
         done = False
         if self.game_over or pos[0] < 0:
