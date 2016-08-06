@@ -11,6 +11,15 @@ gym
 If you're not sure where to start, we recommend beginning with the
 `docs <https://gym.openai.com/docs>`_ on our site.
 
+A whitepaper for OpenAI Gym is available at http://arxiv.org/abs/1606.01540, and here's a BibTeX entry that you can use to cite it in a publication::
+
+	@misc{1606.01540,
+		Author = {Greg Brockman and Vicki Cheung and Ludwig Pettersson and Jonas Schneider and John Schulman and Jie Tang and Wojciech Zaremba},
+		Title = {OpenAI Gym},
+		Year = {2016},
+		Eprint = {arXiv:1606.01540},
+	}
+
 .. contents:: **Contents of this document**
    :depth: 2
 
@@ -62,28 +71,28 @@ installing the dependencies for the remaining environments.
 Installing everything
 ---------------------
 
-Once you're ready to install everything, run ``pip install -e '.[all]'`` (or ``pip install 'gym[all]'``).
-
-MuJoCo has a proprietary dependency we can't set up for you. Follow
-the
-`instructions <https://github.com/openai/mujoco-py#obtaining-the-binaries-and-license-key>`_
-in the ``mujoco-py`` package for help.
-
-For the install to succeed, you'll need to have some system packages
-installed. We'll build out the list here over time; please let us know
+To install the full set of environments, you'll need to have some system
+packages installed. We'll build out the list here over time; please let us know
 what you end up installing on your platform.
 
 On OSX:
 
 .. code:: shell
 
-	  brew install cmake boost boost-python sdl2
+	  brew install cmake boost boost-python sdl2 swig wget
 
 On Ubuntu 14.04:
 
 .. code:: shell
 
 	  apt-get install -y python-numpy python-dev cmake zlib1g-dev libjpeg-dev xvfb libav-tools xorg-dev python-opengl libboost-all-dev libsdl2-dev swig
+
+MuJoCo has a proprietary dependency we can't set up for you. Follow
+the
+`instructions <https://github.com/openai/mujoco-py#obtaining-the-binaries-and-license-key>`_
+in the ``mujoco-py`` package for help.
+
+Once you're ready to install everything, run ``pip install -e '.[all]'`` (or ``pip install 'gym[all]'``).
 
 Supported systems
 -----------------
@@ -187,7 +196,7 @@ Box2d is a 2D physics engine. You can install it via  ``pip install -e '.[box2d]
 .. code:: python
 
 	  import gym
-	  env = gym.make('LunarLander-v0')
+	  env = gym.make('LunarLander-v2')
 	  env.reset()
 	  env.render()
 
@@ -200,6 +209,18 @@ These are a variety of classic control tasks, which would appear in a typical re
 
 	  import gym
 	  env = gym.make('CartPole-v0')
+	  env.reset()
+	  env.render()
+
+Doom
+---------------
+
+These tasks take place inside a Doom game (via the VizDoom project). If you didn't do the full install, you will need to run ``pip install -e '.[doom]'``. You can get started with them via:
+
+.. code:: python
+
+	  import gym
+	  env = gym.make('DoomBasic-v0')
 	  env.reset()
 	  env.render()
 

@@ -6,13 +6,12 @@ from Box2D.b2 import (edgeShape, circleShape, fixtureDef, polygonShape, revolute
 
 import gym
 from gym import spaces
+from gym.envs.box2d.car_dynamics import Car
 from gym.envs.classic_control import rendering
 from gym.utils import colorize, seeding
 
 import pyglet
 from pyglet.gl import *
-
-from car_dynamics import Car
 
 # Easiest continuous control task to learn from pixels, a top-down racing environment.
 # Discreet control is reasonable in this environment as well, on/off discretisation is
@@ -108,7 +107,8 @@ class CarRacing(gym.Env):
 
     def __init__(self):
         self._seed()
-        self.world = Box2D.b2World((0,0), contactListener=FrictionDetector(self))
+        self.contactListener_keepref = FrictionDetector(self)
+        self.world = Box2D.b2World((0,0), contactListener=self.contactListener_keepref)
         self.viewer = None
         self.invisible_state_window = None
         self.invisible_video_window = None
