@@ -31,7 +31,7 @@ class Viewer(object):
     def __init__(self, width, height):
         self.width = width
         self.height = height
-        self.window = pyglet.window.Window(width=width, height=height)
+        self.window = pyglet.window.Window(width=width, height=height, vsync=False)
         self.window.on_close = self.window_closed_by_user
         self.geoms = []
         self.onetime_geoms = []
@@ -281,7 +281,7 @@ class SimpleImageViewer(object):
     def imshow(self, arr):
         if self.window is None:
             height, width, channels = arr.shape
-            self.window = pyglet.window.Window(width=width, height=height)
+            self.window = pyglet.window.Window(width=width, height=height, vsync=0)
             self.width = width
             self.height = height
             self.isopen = True
