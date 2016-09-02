@@ -33,7 +33,12 @@ class CartPoleEnv(gym.Env):
         self.x_threshold = 2.4
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation is still within bounds
-        high = np.array([self.x_threshold, np.inf, self.theta_threshold_radians * 2, np.inf])
+        high = np.array([
+            self.x_threshold * 2,
+            np.finfo(np.float32).max,
+            self.theta_threshold_radians * 2,
+            np.finfo(np.float32).max])
+
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(-high, high)
 
@@ -43,13 +48,18 @@ class CartPoleEnv(gym.Env):
 
         self.steps_beyond_done = None
 
+        # Just need to initialize the relevant attributes
+        self._configure()
+
+    def _configure(self, display=None):
+        self.display = display
+
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
     def _step(self, action):
-        action = action
-        assert action==0 or action==1, "%r (%s) invalid"%(action, type(action))
+        assert self.action_space.contains(action), "%r (%s) invalid"%(action, type(action))
         state = self.state
         x, x_dot, theta, theta_dot = state
         force = self.force_mag if action==1 else -self.force_mag
@@ -108,7 +118,7 @@ class CartPoleEnv(gym.Env):
 
         if self.viewer is None:
             from gym.envs.classic_control import rendering
-            self.viewer = rendering.Viewer(screen_width, screen_height)
+            self.viewer = rendering.Viewer(screen_width, screen_height, display=self.display)
             l,r,t,b = -cartwidth/2, cartwidth/2, cartheight/2, -cartheight/2
             axleoffset =cartheight/4.0
             cart = rendering.FilledPolygon([(l,b), (l,t), (r,t), (r,b)])
@@ -136,8 +146,4 @@ class CartPoleEnv(gym.Env):
         self.carttrans.set_translation(cartx, carty)
         self.poletrans.set_rotation(-x[2])
 
-        self.viewer.render()
-        if mode == 'rgb_array':
-            return self.viewer.get_array()
-        elif mode == 'human':
-            pass
+        return self.viewer.render(return_rgb_array = mode=='rgb_array')
